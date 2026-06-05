@@ -1,5 +1,14 @@
 import { create } from "zustand";
 
+export const jumpRopeDefaultState = {
+  jumpCount: 0,
+  cadence: 0,
+  bodyLean: 0,
+  isJumping: false,
+  cameraReady: false,
+  detectionActive: false,
+};
+
 export const useGameStore = create((set) => ({
   playerPosition: null,
   setPlayerPosition: (position) => set({ playerPosition: position }),
@@ -34,4 +43,14 @@ export const useGameStore = create((set) => ({
   setCollider: (collider) => set({ collider }),
   trackScene: null,
   setTrackScene: (trackScene) => set({ trackScene }),
+  // Jump rope controls
+  jumpRope: { ...jumpRopeDefaultState },
+  setJumpRope: (data) => set((state) => ({ jumpRope: { ...state.jumpRope, ...data } })),
+  gameMode: null,
+  setGameMode: (mode) => set({ gameMode: mode }),
+  // Processed jump rope controls for the game
+  jumpRopeControls: { forward: 0, steer: 0, driftActive: false },
+  setJumpRopeControls: (controls) => set({ jumpRopeControls: controls }),
+  cameraStream: null,
+  setCameraStream: (stream) => set({ cameraStream: stream }),
 }));

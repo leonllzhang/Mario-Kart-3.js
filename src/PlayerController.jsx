@@ -65,6 +65,7 @@ export const PlayerController = () => {
   const colliderBuilt = useRef(false);
   const bvhHelperRef = useRef(null);
   const { scene } = useThree();
+  const wallAvoidSteerRef = useRef(0); // For easy mode auto-steer
 
   // Build collider from scene walls
   useEffect(() => {
@@ -173,7 +174,7 @@ export const PlayerController = () => {
     });
   };
 
-  function updateSpeed(forward, backward, delta) {
+  function updateSpeed(forward, backward, delta, isJumpRope = false) {
     // Tick down stun timer
     if (collisionStunTimer.current > 0) {
       collisionStunTimer.current -= delta;
@@ -198,11 +199,14 @@ export const PlayerController = () => {
       gamepadButtons.forward = gamepadRef.current.buttons[0].pressed;
       gamepadButtons.backward = gamepadRef.current.buttons[1].pressed;
     }
-    const forwardAccel = Number(
-      (isTouchScreen && !gamepadRef.current) ||
-        forward ||
-        gamepadButtons.forward
-    );
+    // Jump rope mode: use numeric forward value directly, no touch-screen auto
+    const forwardAccel = isJumpRope
+      ? Number(forward)
+      : Number(
+          (isTouchScreen && !gamepadRef.current) ||
+            forward ||
+            gamepadButtons.forward
+        );
 
     speedRef.current = damp(
       speedRef.current,
@@ -219,7 +223,7 @@ export const PlayerController = () => {
     turbo.current -= delta;
   }
 
-  function rotatePlayer(left, right, player, joystickX, delta) {
+  function rotatePlayer(left, right, player, joystickX, delta, wallAvoid = 0) {
     const gamepadJoystick = {
       x: 0,
     };
@@ -232,7 +236,8 @@ export const PlayerController = () => {
       (-gamepadJoystick.x -
         joystickX +
         (Number(left) - Number(right)) +
-        driftDirection.current) *
+        driftDirection.current +
+        wallAvoid) *
       0.1;
 
     rotationSpeedRef.current = damp(
@@ -281,6 +286,30 @@ export const PlayerController = () => {
     if (driftDirection.current !== driftDirections.none) {
       driftPower.current += delta;
     }
+  }
+
+  // Jump rope drift: triggered by sustained body lean
+  const prevDriftActive = useRef(false);
+
+  function handleJumpRopeDrift(active, leanX) {
+    if (active && !prevDriftActive.current) {
+      // Drift just activated: start drift in the lean direction
+      isJumping.current = true;
+      jumpIsHeld.current = true;
+      jumpAnim();
+      driftDirection.current =
+        leanX < 0 ? driftDirections.left : driftDirections.right;
+    } else if (!active && prevDriftActive.current) {
+      // Drift just released: apply turbo, reset
+      jumpIsHeld.current = false;
+      isJumping.current = false;
+      if (turbo.current <= 0) {
+        turbo.current = useGameStore.getState().boostPower || 0;
+      }
+      driftDirection.current = driftDirections.none;
+      driftPower.current = 0;
+    }
+    prevDriftActive.current = active;
   }
 
   function updatePlayer(player, speed, camera, kart, delta) {
@@ -335,10 +364,26 @@ export const PlayerController = () => {
       player.position.x = result.position.x;
       player.position.z = result.position.z;
 
-      // Bounce back and stun on collision
+      // Collision response
       if (result.collided && collisionStunTimer.current <= 0) {
-        speedRef.current = COLLISION_BOUNCE_SPEED;
-        collisionStunTimer.current = COLLISION_STUN_DURATION;
+        const mode = useGameStore.getState().gameMode;
+        if (mode === "easy") {
+          // Easy mode: no stun, gentle wall slide + auto steer away
+          collisionStunTimer.current = 0.05;
+          // Compute wall avoidance steering from push direction
+          const pushX = desiredX - result.position.x;
+          const pushZ = desiredZ - result.position.z;
+          const cos = Math.cos(-player.rotation.y);
+          const sin = Math.sin(-player.rotation.y);
+          const localPushX = pushX * cos - pushZ * sin;
+          wallAvoidSteerRef.current = -localPushX * 4;
+        } else {
+          speedRef.current = COLLISION_BOUNCE_SPEED;
+          collisionStunTimer.current = COLLISION_STUN_DURATION;
+        }
+      } else if (Math.abs(wallAvoidSteerRef.current) > 0.001) {
+        // Decay wall avoidance when not colliding
+        wallAvoidSteerRef.current *= 0.92;
       }
     } else {
       // No collision system - move freely
@@ -369,6 +414,18 @@ export const PlayerController = () => {
 
     const { forward, backward, left, right, jump } = get();
 
+    // Jump rope mode override
+    const gameMode = useGameStore.getState().gameMode;
+    const jumpRopeCtrl = useGameStore.getState().jumpRopeControls;
+    const isJumpRope = gameMode !== null;
+
+    const effectiveForward = isJumpRope
+      ? (jumpRopeCtrl?.forward || 0)
+      : forward;
+    const effectiveBackward = isJumpRope ? false : backward;
+    const effectiveLeft = isJumpRope ? false : left;
+    const effectiveRight = isJumpRope ? false : right;
+
     const gamepadButtons = {
       jump: false,
       x: 0,
@@ -382,11 +439,16 @@ export const PlayerController = () => {
     }
     const time = state.clock.getElapsedTime();
 
-    updateSpeed(forward, backward, delta);
-    rotatePlayer(left, right, player, joystick.x, delta);
+    updateSpeed(effectiveForward, effectiveBackward, delta, isJumpRope);
+    const avoidSteer = isJumpRope ? wallAvoidSteerRef.current : 0;
+    rotatePlayer(effectiveLeft, effectiveRight, player, joystick.x, delta, avoidSteer);
     updatePlayer(player, speedRef.current, camera, kart, delta);
-    const isJumpPressed = jumpButtonPressed || jump || gamepadButtons.jump;
-    jumpPlayer(isJumpPressed, left, right, joystick.x || gamepadButtons.x);
+    if (isJumpRope) {
+      handleJumpRopeDrift(jumpRopeCtrl?.driftActive || false, joystick.x);
+    } else {
+      const isJumpPressed = jumpButtonPressed || jump || gamepadButtons.jump;
+      jumpPlayer(isJumpPressed, left, right, joystick.x || gamepadButtons.x);
+    }
     driftPlayer(delta);
     getGamepad();
     updatePlayroomState();

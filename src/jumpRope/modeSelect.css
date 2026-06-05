@@ -1,0 +1,98 @@
+.mode-select-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  color: white;
+  font-family: "Oswald", sans-serif;
+}
+
+.mode-select-title {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.mode-select-title h1 {
+  font-size: 64px;
+  margin: 0;
+  text-shadow: 0 0 30px rgba(255, 200, 0, 0.5);
+  letter-spacing: 4px;
+}
+
+.mode-select-title p {
+  font-size: 24px;
+  opacity: 0.7;
+  margin: 8px 0 0;
+  letter-spacing: 2px;
+}
+
+.mode-select-cards {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.mode-card {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 36px;
+  border-radius: 24px;
+  width: 260px;
+  transition: all 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.mode-card:hover {
+  transform: translateY(-8px) scale(1.03);
+}
+
+.mode-card-easy {
+  background: linear-gradient(180deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.05));
+  border-color: rgba(76, 175, 80, 0.4);
+}
+.mode-card-easy:hover {
+  border-color: #4caf50;
+  box-shadow: 0 20px 60px rgba(76, 175, 80, 0.3);
+}
+
+.mode-card-normal {
+  background: linear-gradient(180deg, rgba(255, 152, 0, 0.2), rgba(255, 152, 0, 0.05));
+  border-color: rgba(255, 152, 0, 0.4);
+}
+.mode-card-normal:hover {
+  border-color: #ff9800;
+  box-shadow: 0 20px 60px rgba(255, 152, 0, 0.3);
+}
+
+.mode-emoji {
+  font-size: 56px;
+  margin-bottom: 16px;
+}
+
+.mode-name {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.mode-features {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 18px;
+  line-height: 2;
+  opacity: 0.85;
+}
+
+.mode-features li {
+  font-weight: 300;
+}

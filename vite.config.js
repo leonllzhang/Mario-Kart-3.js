@@ -7,6 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   plugins: [react(), glsl(), VitePWA({
        registerType: 'autoUpdate',
+       workbox: { maximumFileSizeToCacheInBytes: 6 * 1024 * 1024 },
        includeAssets: [ 'favicon.ico'],
        manifest: {
          name: 'Mario Kart 3.js',
