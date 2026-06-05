@@ -11,7 +11,7 @@ import { useGameStore } from "../../../store";
 export const Glow = forwardRef(({ driftDirection }, ref) => {
   const materialRef = useRef(null);
   const sparkRef = useRef(null);
-  let noiseTexture = null;
+  const noiseTextureRef = useRef(null);
   
   const material = useMemo(() => new ShaderMaterial({
     uniforms: {
@@ -36,11 +36,9 @@ export const Glow = forwardRef(({ driftDirection }, ref) => {
       material.uniforms.time.value = state.clock.getElapsedTime() * 2;
     
       material.uniforms.xDisplacement.value = -(driftDirection.current) * 0.1;
-      if(noiseTexture === null){
-        noiseTexture = useGameStore.getState().noiseTexture;
-        material.uniforms.noiseTexture.value = noiseTexture;
-        console.log(noiseTexture);
-        
+      if (noiseTextureRef.current === null) {
+        noiseTextureRef.current = useGameStore.getState().noiseTexture;
+        material.uniforms.noiseTexture.value = noiseTextureRef.current;
       }
     }
     

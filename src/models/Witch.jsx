@@ -65,20 +65,23 @@ const playAction = (name, loopOnce = false) => {
 
   useEffect(() => {
     console.log(animations);
-    currentAction.current = actions["IDLE-KART"].play();
-    windActionRef.current = actions["wind"].play();
-    sceneRef.current.traverse((obj) => {
+    if (actions["IDLE-KART"]) {
+      currentAction.current = actions["IDLE-KART"].play();
+    }
+    if (actions["wind"]) {
+      windActionRef.current = actions["wind"].play();
+    }
+    sceneRef.current?.traverse((obj) => {
       if(obj.isMesh){
         obj.castShadow = true;
         obj.receiveShadow = true;
       }
     })
-    // actions.play('IDLE-KART')
   }, [actions]);
 
   useFrame((state, delta) => {
     const time = state.clock.getElapsedTime();
-    windActionRef.current.setEffectiveTimeScale(speed.current / 15);
+    windActionRef.current?.setEffectiveTimeScale(speed.current / 15);
 
     if (inputTurn.current < -0.01) {
       playAction("TURN-RIGHT", true);
